@@ -13,14 +13,15 @@ import scala.concurrent.{ExecutionContext, Future}
 class ActorDao @Inject()  (protected val dbConfigProvider: DatabaseConfigProvider)(implicit executionContext: ExecutionContext) extends HasDatabaseConfigProvider[JdbcProfile] {
   import profile.api._
 
-  private val Actors = TableQuery[ActorTables]
+  private val actors = TableQuery[ActorTables]
 
-  def all() : Future[Seq[Actor]] = db.run(Actors.result)
+  def all() : Future[Seq[Actor]] = db.run(actors.result)
 
-  def insert(actor : Actor) : Future[Unit] = db.run(Actors += actor).map { _ => () }
+  def insert(actor : Actor) : Future[Unit] = db.run(actors += actor).map { _ => () }
 
   private class ActorTables(tag: Tag) extends Table[Actor](tag, "Actor"){
     //case class Actor(id : Long, name : String, height : Int, blood : String, birthday : Date, birthplaceId : Int)
+    import profile.api._
     def id = column[Long]("ID", O.PrimaryKey)
     def name = column[String]("NAME")
     def height = column[Int]("HEIGHT")
@@ -31,6 +32,10 @@ class ActorDao @Inject()  (protected val dbConfigProvider: DatabaseConfigProvide
     def * = (id, name, height, blood, birthday, birthplaceId) <> (Actor.tupled, Actor.unapply)
 
   }
+
+  /** Retrieve a computer from the id. */
+  def findById(id: Long): Future[Option[Actor]] =
+    db.run(actors.filter(_.id === id).result.headOption)
 
 
 }
